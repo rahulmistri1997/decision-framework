@@ -5,59 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Decision Framework</title>
     
-    <!-- Standard Favicon -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2334d399' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/%3E%3C/svg%3E" type="image/svg+xml">
     
-    <!-- iOS Web App & Home Screen Icon Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="O(1) Engine">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     
-    <!-- External Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- Custom Styles for Tailwind Animations -->
     <style>
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slide-in-from-top-2 { from { transform: translateY(-0.5rem); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes slide-in-from-bottom-4 { from { transform: translateY(1rem); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes slide-in-from-right-4 { from { transform: translateX(1rem); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes zoom-in-95 { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        .animate-in { animation-duration: 0.5s; animation-fill-mode: both; }
+        .animate-in { animation-duration: 0.4s; animation-fill-mode: both; }
         .fade-in { animation-name: fade-in; }
+        .slide-in-from-top-2 { animation-name: slide-in-from-top-2; }
         .slide-in-from-bottom-4 { animation-name: slide-in-from-bottom-4; }
-        .slide-in-from-right-4 { animation-name: slide-in-from-right-4; }
-        .zoom-in-95 { animation-name: zoom-in-95; }
-        .duration-200 { animation-duration: 200ms; }
         .duration-300 { animation-duration: 300ms; }
         .duration-500 { animation-duration: 500ms; }
         
-        /* Custom Scrollbar for Info Modal */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-        /* General Body Setup */
-        body { background-color: #020617; color: #e2e8f0; }
+        body { background-color: #020617; color: #e2e8f0; scroll-behavior: smooth; }
     </style>
 </head>
 <body class="font-sans antialiased selection:bg-emerald-500/30 overflow-x-hidden">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useRef } = React;
+        const { useState, useRef, useEffect } = React;
 
-        // --- Inline Icons (Replacing lucide-react for standalone usage) ---
+        // --- Inline Icons ---
         const Icon = ({ size = 24, className = '', children }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                {children}
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
         );
         const Clock = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Icon>;
         const Calendar = (p) => <Icon {...p}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></Icon>;
@@ -66,99 +55,140 @@
         const RotateCcw = (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
         const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Icon>;
         const Zap = (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
-        const CheckSquare = (p) => <Icon {...p}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></Icon>;
-        const Activity = (p) => <Icon {...p}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></Icon>;
-        const ArrowLeft = (p) => <Icon {...p}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></Icon>;
+        const Check = (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>;
         const Terminal = (p) => <Icon {...p}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></Icon>;
-        const Info = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></Icon>;
-        const X = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
-        const BookOpen = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
         const GitBranch = (p) => <Icon {...p}><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></Icon>;
-        const CornerDownRight = (p) => <Icon {...p}><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></Icon>;
         const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>;
         const Copy = (p) => <Icon {...p}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></Icon>;
-        const Check = (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>;
+        const Activity = (p) => <Icon {...p}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></Icon>;
 
-        // --- App Component ---
+        // --- Core Components ---
+
+        const ChoiceBtn = ({ children, onClick }) => (
+            <button 
+                onClick={onClick} 
+                className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:text-emerald-400 text-slate-300 transition-all rounded-lg p-3 text-sm font-medium text-left w-full flex items-center justify-between group"
+            >
+                <span>{children}</span>
+                <span className="text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity font-mono text-xs">➔</span>
+            </button>
+        );
+
+        const PathNode = ({ title, icon: IconComponent, isActive, isCompleted, isLast, onEdit, children, completedText }) => {
+            const isFuture = !isActive && !isCompleted;
+            
+            return (
+                <div className={`relative pl-8 sm:pl-10 pb-8 transition-all duration-500 ${isFuture ? 'opacity-30 grayscale pointer-events-none' : 'opacity-100'}`}>
+                    
+                    {/* Vertical connecting line */}
+                    {!isLast && (
+                        <div className={`absolute left-[7px] top-8 bottom-0 w-[2px] transition-colors duration-500 ${isCompleted ? 'bg-emerald-500/30' : 'bg-slate-800'}`}></div>
+                    )}
+                    
+                    {/* The Node Marker */}
+                    <div className={`absolute left-0 top-1 w-4 h-4 rounded-full flex items-center justify-center transition-all duration-500 z-10
+                        ${isActive ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)] scale-110' : 
+                          isCompleted ? 'bg-emerald-500' : 
+                          'bg-slate-950 border-2 border-slate-700'}`}
+                    >
+                        {isCompleted && <Check size={10} className="text-slate-950" />}
+                    </div>
+
+                    <div className="w-full">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className={`text-sm font-bold uppercase tracking-wider flex items-center gap-2 
+                                ${isActive ? 'text-emerald-400' : isCompleted ? 'text-slate-400' : 'text-slate-600'}`}>
+                                <IconComponent size={16} /> {title}
+                            </h3>
+                            {isCompleted && onEdit && !isActive && (
+                                <button onClick={onEdit} className="text-[10px] font-mono text-slate-500 hover:text-emerald-400 transition-colors">
+                                    [EDIT]
+                                </button>
+                            )}
+                        </div>
+                        
+                        {isActive && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-300 w-full">
+                                {children}
+                            </div>
+                        )}
+                        
+                        {isCompleted && !isActive && (
+                            <div className="animate-in fade-in duration-300 font-mono text-xs text-slate-300 flex items-center gap-2 bg-slate-900/50 border border-slate-800/50 p-2.5 rounded-lg w-fit">
+                                <span className="text-emerald-500/50">➔</span> {completedText}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
         function App() {
-            const [step, setStep] = useState(0);
-            const [showInfo, setShowInfo] = useState(false);
+            const [currentStep, setCurrentStep] = useState(0);
+            
             const [decisionContext, setDecisionContext] = useState('');
+            const [decisionTarget, setDecisionTarget] = useState('');
+            
+            const [impact10Min, setImpact10Min] = useState(null);
+            const [impact10Mo, setImpact10Mo] = useState(null);
+            const [impact10Yr, setImpact10Yr] = useState(null);
+            const [isReversible, setIsReversible] = useState(null);
+            
+            const [generationTime, setGenerationTime] = useState('');
             
             const resultRef = useRef(null);
             const [exportState, setExportState] = useState({ type: null, status: 'idle' });
 
-            // State for 10/10/10 filter (0 = Low, 1 = Med, 2 = High)
-            const [impact10Min, setImpact10Min] = useState(null);
-            const [impact10Mo, setImpact10Mo] = useState(null);
-            const [impact10Yr, setImpact10Yr] = useState(null);
-            
-            // State for reversibility
-            const [isReversible, setIsReversible] = useState(null);
-            const [generationTime, setGenerationTime] = useState('');
+            // Auto-scroll logic when moving to a new step
+            const containerRef = useRef(null);
+            useEffect(() => {
+                if (currentStep > 0 && containerRef.current) {
+                    // Small delay ensures DOM updates first
+                    setTimeout(() => {
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }, 100);
+                }
+            }, [currentStep]);
 
-            const resetApp = () => {
-                setStep(0);
-                setDecisionContext('');
-                setImpact10Min(null);
-                setImpact10Mo(null);
-                setImpact10Yr(null);
-                setIsReversible(null);
+            const resetFromStep = (step) => {
+                setCurrentStep(step);
+                if (step <= 0) { setDecisionTarget(''); }
+                if (step <= 1) { setImpact10Min(null); }
+                if (step <= 2) { setImpact10Mo(null); }
+                if (step <= 3) { setImpact10Yr(null); }
+                if (step <= 4) { setIsReversible(null); }
+            };
+
+            const handleFinalize = (reversible) => {
+                setIsReversible(reversible);
+                const now = new Date();
+                setGenerationTime(now.toLocaleString(undefined, {
+                    timeZoneName: 'short', year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+                }).toUpperCase());
+                setCurrentStep(5);
             };
 
             const calculateStakes = () => {
-                // 0 = Low, 1 = Medium, 2 = High
                 let stakes = 0; 
-                
-                // Core Logic: IF (10_Month_Impact == 0 && 10_Year_Impact == 0) ➔ AUTO-DOWNGRADE to "Low Stakes".
-                if (impact10Mo === 0 && impact10Yr === 0) {
-                    stakes = 0;
-                } 
-                // If long term impact is high
-                else if (impact10Yr === 2 || impact10Mo === 2) {
-                    stakes = 2;
-                }
-                // If medium term impact
-                else {
-                    stakes = 1;
-                }
+                if (impact10Mo === 0 && impact10Yr === 0) stakes = 0;
+                else if (impact10Yr === 2 || impact10Mo === 2) stakes = 2;
+                else stakes = 1;
 
-                // Circuit Breaker: Two-Way Door (Reversible) downgrades the risk
-                if (isReversible === true && stakes > 0) {
-                    stakes -= 1;
-                } else if (isReversible === false && stakes === 0 && impact10Mo > 0) {
-                    // Irreversible things with at least some medium term impact bump up
-                    stakes = 1;
-                }
+                if (isReversible === true && stakes > 0) stakes -= 1;
+                else if (isReversible === false && stakes === 0 && impact10Mo > 0) stakes = 1;
 
                 return stakes;
             };
 
-            const handleCalculate = () => {
-                const now = new Date();
-                setGenerationTime(now.toLocaleString(undefined, {
-                    timeZoneName: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                }).toUpperCase());
-                setStep(3);
-            };
-
             const captureImage = async () => {
                 if (!resultRef.current || !window.html2canvas) return null;
-
-                // Capture the specific container
                 const canvas = await window.html2canvas(resultRef.current, { 
-                    backgroundColor: '#020617', // Force exact background color match to slate-950
-                    scale: 3, // Boosted resolution for sharper text
+                    backgroundColor: '#020617',
+                    scale: 3, 
                     useCORS: true,
                     allowTaint: true,
-                    scrollY: -window.scrollY // Fixes viewport displacement issues
+                    scrollY: -window.scrollY 
                 });
                 return canvas;
             };
@@ -168,7 +198,7 @@
                 try {
                     const canvas = await captureImage();
                     const link = document.createElement('a');
-                    link.download = `decision-heuristic-${Date.now()}.png`;
+                    link.download = `heuristic-${Date.now()}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                     setExportState({ type: 'download', status: 'success' });
@@ -199,520 +229,171 @@
                 }
             };
 
-            const InfoModal = () => {
-                if (!showInfo) return null;
+            // Calculated Outputs
+            const stakes = calculateStakes();
+            const config = {
+                0: { title: "LOW STAKES", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/30", ttl: "15 Minutes", options: "Max 2", algorithm: "Coin Flip / First-Found", rule: "Execution speed > perfection. Choose the first viable option and move on immediately. Satisficing is an optimization." },
+                1: { title: "MEDIUM STAKES", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/30", ttl: "2 Hours", options: "3 to 4", algorithm: "Satisficing (Criteria)", rule: "Define 3-4 'Must-Have' criteria. Buy/Book the FIRST option that hits all marks. Stop searching immediately upon hit." },
+                2: { title: "HIGH STAKES", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/30", ttl: "7 Days (Hard)", options: "Top 5 Only", algorithm: "Default Action Fallback", rule: "Define a 'Good Enough' fallback on Day 1. If 7-day timeout hits without a perfect breakthrough, execute the fallback instantly." }
+            }[stakes];
 
-                return (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col shadow-2xl slide-in-from-bottom-4 animate-in duration-300">
-                            <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
-                                <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-                                    <BookOpen size={18} className="text-emerald-400" />
-                                    Framework Documentation
-                                </h2>
-                                <button 
-                                    onClick={() => setShowInfo(false)}
-                                    className="text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-700 transition-colors"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-                            
-                            <div className="p-5 overflow-y-auto space-y-6 text-sm">
-                                <div className="space-y-2">
-                                    <h3 className="text-emerald-400 font-semibold uppercase tracking-wider text-xs">The Problem</h3>
-                                    <p className="text-slate-300 leading-relaxed">
-                                        Analysis paralysis. We often apply rigorous, time-consuming evaluation processes to low-stakes personal choices. 
-                                        <strong className="text-slate-100"> Cost of Latency &gt; Suboptimal Choices.</strong>
-                                    </p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <h3 className="text-emerald-400 font-semibold uppercase tracking-wider text-xs">Phase 1: 10/10/10 Filter</h3>
-                                    <p className="text-slate-300 leading-relaxed">
-                                        Evaluates the choice across three time horizons to prevent "focalism" (inflating current importance):
-                                    </p>
-                                    <ul className="list-disc pl-5 text-slate-400 space-y-1">
-                                        <li><span className="text-slate-200 font-medium">10 Minutes:</span> Immediate emotional reaction.</li>
-                                        <li><span className="text-slate-200 font-medium">10 Months:</span> Medium-term consequences.</li>
-                                        <li><span className="text-slate-200 font-medium">10 Years:</span> Long-term memory/impact.</li>
-                                    </ul>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <h3 className="text-emerald-400 font-semibold uppercase tracking-wider text-xs">Phase 2: The Circuit Breaker</h3>
-                                    <p className="text-slate-300 leading-relaxed">
-                                        Determines reversibility. A "Two-Way Door" means you can easily roll back the decision. Reversible choices automatically downgrade the stakes severity, encouraging faster execution.
-                                    </p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <h3 className="text-emerald-400 font-semibold uppercase tracking-wider text-xs">Output: Execution Tiers</h3>
-                                    <div className="space-y-3 mt-2">
-                                        <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg">
-                                            <strong className="text-emerald-400 block mb-1">🟢 Low Stakes (15m TTL)</strong>
-                                            <span className="text-slate-400">Logistics, minor tools. Pick the first viable option. Flip a coin if needed.</span>
-                                        </div>
-                                        <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg">
-                                            <strong className="text-amber-400 block mb-1">🟡 Medium Stakes (2h TTL)</strong>
-                                            <span className="text-slate-400">Mid-tier purchases, travel. Define 3 must-haves. Buy the first thing that hits all 3.</span>
-                                        </div>
-                                        <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
-                                            <strong className="text-red-400 block mb-1">🔴 High Stakes (7d TTL)</strong>
-                                            <span className="text-slate-400">Investments, career. Set a fallback option today. If 7 days pass with no breakthrough, execute the fallback.</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3 pt-4 border-t border-slate-800">
-                                    <h3 className="text-emerald-400 font-semibold uppercase tracking-wider text-xs flex items-center gap-2">
-                                        <GitBranch size={14} /> Decision Tree Logic
-                                    </h3>
-                                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-lg font-mono text-xs text-slate-300 overflow-x-auto">
-                                        <div className="space-y-2">
-                                            <div className="text-slate-100 font-bold">[ START ] 10/10/10 Impact Assessment</div>
-                                            
-                                            <div className="pl-2 border-l-2 border-slate-700 ml-2 py-1 space-y-3">
-                                                <div>
-                                                    <div className="flex items-center gap-2"><CornerDownRight size={12} className="text-slate-500 shrink-0"/> <span>Both 10-Mo & 10-Yr = Zero</span></div>
-                                                    <div className="pl-6 text-emerald-400 font-bold">➔ Base: LOW STAKES</div>
-                                                </div>
-                                                
-                                                <div>
-                                                    <div className="flex items-center gap-2"><CornerDownRight size={12} className="text-slate-500 shrink-0"/> <span>Either 10-Mo or 10-Yr = Major/Altering</span></div>
-                                                    <div className="pl-6 text-red-400 font-bold">➔ Base: HIGH STAKES</div>
-                                                </div>
-
-                                                <div>
-                                                    <div className="flex items-center gap-2"><CornerDownRight size={12} className="text-slate-500 shrink-0"/> <span>All other combinations</span></div>
-                                                    <div className="pl-6 text-amber-400 font-bold">➔ Base: MEDIUM STAKES</div>
-                                                </div>
-                                            </div>
-
-                                            <div className="text-slate-100 font-bold pt-2">[ CONTINUE ] Reversibility Check</div>
-                                            
-                                            <div className="pl-2 border-l-2 border-slate-700 ml-2 py-1 space-y-3">
-                                                <div>
-                                                    <div className="flex items-center gap-2"><CornerDownRight size={12} className="text-slate-500 shrink-0"/> <span>Two-Way Door (Reversible)</span></div>
-                                                    <div className="pl-6 text-emerald-400 font-bold">➔ Downgrade Stakes by 1 Tier</div>
-                                                    <div className="pl-6 text-slate-500">(e.g., High becomes Medium)</div>
-                                                </div>
-
-                                                <div>
-                                                    <div className="flex items-center gap-2"><CornerDownRight size={12} className="text-slate-500 shrink-0"/> <span>One-Way Door (Irreversible)</span></div>
-                                                    <div className="pl-6 text-amber-400 font-bold">➔ Maintain Stakes / Finalize</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3 pt-4 border-t border-slate-800">
-                                    <h3 className="text-emerald-400 font-semibold uppercase tracking-wider text-xs flex items-center gap-2">
-                                        <Zap size={14} /> Simulation Flows (Examples)
-                                    </h3>
-                                    
-                                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 space-y-2">
-                                        <div className="flex justify-between items-start">
-                                            <span className="text-slate-200 font-medium text-sm">Decision: "Buying a Keyboard"</span>
-                                        </div>
-                                        <div className="text-xs text-slate-400 space-y-1">
-                                            <p>• <span className="text-slate-300">10 Min:</span> Intense</p>
-                                            <p>• <span className="text-slate-300">10 Months:</span> Minor</p>
-                                            <p>• <span className="text-slate-300">10 Years:</span> Zero</p>
-                                            <p>• <span className="text-slate-300">Circuit Breaker:</span> Two-Way Door (Reversible, can return it)</p>
-                                        </div>
-                                        <div className="mt-2 pt-2 border-t border-slate-700/50 flex items-center gap-2 flex-wrap">
-                                            <span className="text-xs font-bold text-slate-500 uppercase">Result:</span>
-                                            <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">🟢 LOW STAKES</span>
-                                            <span className="text-[10px] text-slate-400 leading-tight">(Started Medium, downgraded due to reversibility)</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 space-y-2">
-                                        <div className="flex justify-between items-start">
-                                            <span className="text-slate-200 font-medium text-sm">Decision: "Adopting a Dog"</span>
-                                        </div>
-                                        <div className="text-xs text-slate-400 space-y-1">
-                                            <p>• <span className="text-slate-300">10 Min:</span> Intense</p>
-                                            <p>• <span className="text-slate-300">10 Months:</span> Major</p>
-                                            <p>• <span className="text-slate-300">10 Years:</span> Altering</p>
-                                            <p>• <span className="text-slate-300">Circuit Breaker:</span> One-Way Door (Irreversible bound)</p>
-                                        </div>
-                                        <div className="mt-2 pt-2 border-t border-slate-700/50 flex items-center gap-2 flex-wrap">
-                                            <span className="text-xs font-bold text-slate-500 uppercase">Result:</span>
-                                            <span className="text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded">🔴 HIGH STAKES</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="p-4 border-t border-slate-800 bg-slate-900">
-                                <button 
-                                    onClick={() => setShowInfo(false)}
-                                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium p-3 rounded-lg transition-colors"
-                                >
-                                    Acknowledge & Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            };
-
-            const renderStep0 = () => (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 px-6 w-full">
-                    <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-xl space-y-4">
-                        <h2 className="text-xl font-semibold text-slate-100 flex items-center gap-2">
-                            Initialize Protocol
-                        </h2>
-                        <p className="text-slate-400 text-sm">
-                            Cost of Latency &gt; Suboptimal Choices. Enter the decision causing analysis paralysis to begin O(1) routing.
-                        </p>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-slate-300">Decision Target</label>
-                            <input 
-                                type="text" 
-                                placeholder="e.g., Which mechanical keyboard to buy, Tech stack for side project..."
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                                value={decisionContext}
-                                onChange={(e) => setDecisionContext(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && decisionContext && setStep(1)}
-                            />
-                        </div>
-                        <button 
-                            disabled={!decisionContext}
-                            onClick={() => setStep(1)}
-                            className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium p-3 rounded-lg flex justify-center items-center gap-2 transition-colors"
-                        >
-                            Run 10/10/10 Pre-Filter <ArrowRight size={18} />
-                        </button>
-                    </div>
-                </div>
-            );
-
-            const ImpactButton = ({ label, value, current, setter }) => (
-                <button
-                    onClick={() => setter(value)}
-                    className={`p-3 rounded-lg border text-left flex items-center justify-between transition-all ${
-                        current === value 
-                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' 
-                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                    }`}
-                >
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                        {label}
-                    </span>
-                    {current === value && <CheckSquare size={16} />}
-                </button>
-            );
-
-            const renderStep1 = () => (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 px-6 w-full">
-                    <button onClick={() => setStep(0)} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-sm mb-4">
-                        <ArrowLeft size={14} /> Back
-                    </button>
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-bold text-slate-100">10/10/10 Stakes Assessment</h2>
-                        <p className="text-slate-400">Evaluate the absolute impact horizon.</p>
-                    </div>
-
-                    <div className="space-y-6">
-                        {/* 10 Minutes */}
-                        <div className="bg-slate-800/40 p-5 rounded-xl border border-slate-700/50 space-y-3">
-                            <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                10 Minutes from now
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                                <ImpactButton label="None" value={0} current={impact10Min} setter={setImpact10Min} />
-                                <ImpactButton label="Noticeable" value={1} current={impact10Min} setter={setImpact10Min} />
-                                <ImpactButton label="Intense" value={2} current={impact10Min} setter={setImpact10Min} />
-                            </div>
-                        </div>
-
-                        {/* 10 Months */}
-                        <div className="bg-slate-800/40 p-5 rounded-xl border border-slate-700/50 space-y-3">
-                            <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                10 Months from now
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                                <ImpactButton label="Forgotten" value={0} current={impact10Mo} setter={setImpact10Mo} />
-                                <ImpactButton label="Minor" value={1} current={impact10Mo} setter={setImpact10Mo} />
-                                <ImpactButton label="Major" value={2} current={impact10Mo} setter={setImpact10Mo} />
-                            </div>
-                        </div>
-
-                        {/* 10 Years */}
-                        <div className="bg-slate-800/40 p-5 rounded-xl border border-slate-700/50 space-y-3">
-                            <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                                10 Years from now
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                                <ImpactButton label="Zero" value={0} current={impact10Yr} setter={setImpact10Yr} />
-                                <ImpactButton label="Minimal" value={1} current={impact10Yr} setter={setImpact10Yr} />
-                                <ImpactButton label="Altering" value={2} current={impact10Yr} setter={setImpact10Yr} />
-                            </div>
-                        </div>
-                    </div>
-
-                    <button 
-                        disabled={impact10Min === null || impact10Mo === null || impact10Yr === null}
-                        onClick={() => setStep(2)}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium p-3 rounded-lg flex justify-center items-center gap-2 transition-colors mt-8"
-                    >
-                        Next: Reversibility Check <ArrowRight size={18} />
-                    </button>
-                </div>
-            );
-
-            const renderStep2 = () => (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 px-6 w-full">
-                    <button onClick={() => setStep(1)} className="text-slate-500 hover:text-slate-300 flex items-center gap-1 text-sm mb-4">
-                        <ArrowLeft size={14} /> Back
-                    </button>
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-bold text-slate-100">The Circuit Breaker</h2>
-                        <p className="text-slate-400">Determine the cost of rolling back this decision.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 mt-6">
-                        <button
-                            onClick={() => setIsReversible(true)}
-                            className={`p-6 rounded-xl border-2 text-left space-y-2 transition-all ${
-                                isReversible === true 
-                                    ? 'bg-emerald-500/10 border-emerald-500' 
-                                    : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <h3 className={`font-bold ${isReversible === true ? 'text-emerald-400' : 'text-slate-200'}`}>
-                                    Two-Way Door (Reversible)
-                                </h3>
-                            </div>
-                            <p className="text-sm text-slate-400">I can change my mind later with minimal penalty or cost. (e.g., Software tool, canceling a subscription)</p>
-                        </button>
-
-                        <button
-                            onClick={() => setIsReversible(false)}
-                            className={`p-6 rounded-xl border-2 text-left space-y-2 transition-all ${
-                                isReversible === false 
-                                    ? 'bg-slate-700 border-slate-500' 
-                                    : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <h3 className={`font-bold ${isReversible === false ? 'text-slate-100' : 'text-slate-200'}`}>
-                                    One-Way Door (Irreversible)
-                                </h3>
-                            </div>
-                            <p className="text-sm text-slate-400">Cannot be easily undone. Significant sunk cost or long-term binding. (e.g., Taking a job, buying a house)</p>
-                        </button>
-                    </div>
-
-                    <button 
-                        disabled={isReversible === null}
-                        onClick={handleCalculate}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-medium p-3 rounded-lg flex justify-center items-center gap-2 transition-colors mt-8"
-                    >
-                        Calculate Execution Strategy <ArrowRight size={18} />
-                    </button>
-                </div>
-            );
-
-            const renderStep3 = () => {
-                const stakes = calculateStakes();
-                
-                const config = {
-                    0: {
-                        title: "LOW STAKES",
-                        color: "text-emerald-400",
-                        bg: "bg-emerald-500/10",
-                        border: "border-emerald-500/30",
-                        ttl: "15 Minutes",
-                        options: "Max 2",
-                        algorithm: "Coin Flip / First-Found",
-                        rule: "Execution speed > perfection. Choose the first viable option and move on immediately. Satisficing is an optimization.",
-                        icon: Zap
-                    },
-                    1: {
-                        title: "MEDIUM STAKES",
-                        color: "text-amber-400",
-                        bg: "bg-amber-500/10",
-                        border: "border-amber-500/30",
-                        ttl: "2 Hours",
-                        options: "3 to 4",
-                        algorithm: "Satisficing (Criteria Match)",
-                        rule: "Define 3-4 'Must-Have' criteria. Buy/Book the FIRST option that hits all marks. Stop searching immediately upon hit.",
-                        icon: AlertTriangle
-                    },
-                    2: {
-                        title: "HIGH STAKES",
-                        color: "text-red-400",
-                        bg: "bg-red-500/10",
-                        border: "border-red-500/30",
-                        ttl: "7 Days (Hard Deadline)",
-                        options: "Top 5 Only",
-                        algorithm: "Default Action Fallback",
-                        rule: "Define a 'Good Enough' fallback on Day 1. If 7-day timeout hits without a perfect breakthrough, execute the fallback instantly.",
-                        icon: History
-                    }
-                }[stakes];
-
-                const ConfigIcon = config.icon;
-
-                const impact10MinLabel = {0: 'None', 1: 'Noticeable', 2: 'Intense'}[impact10Min];
-                const impact10MoLabel = {0: 'Forgotten', 1: 'Minor', 2: 'Major'}[impact10Mo];
-                const impact10YrLabel = {0: 'Zero', 1: 'Minimal', 2: 'Altering'}[impact10Yr];
-                const doorLabel = isReversible ? 'Two-Way Door' : 'One-Way Door';
-
-                return (
-                    <div className="space-y-4 animate-in zoom-in-95 duration-500 w-full flex flex-col items-center">
-                        
-                        {/* The wrapper we want to capture as an image. Simplified, minimal UI. */}
-                        <div ref={resultRef} className="bg-slate-950 w-full pt-8 pb-8 px-6 flex flex-col items-start relative font-mono border-b border-transparent">
-                            
-                            <div className="w-full mb-6 border-b border-slate-800 pb-4">
-                                <p className="text-slate-500 uppercase tracking-widest text-xs font-bold mb-2">Execution Heuristic</p>
-                                <h2 className="text-xl font-semibold text-slate-100 break-words w-full">{decisionContext}</h2>
-                                <p className="text-slate-500 text-xs mt-3">Generated: {generationTime}</p>
-                            </div>
-
-                            <div className="flex flex-wrap gap-x-6 gap-y-2 mb-8 w-full text-xs text-slate-400">
-                                <span>[10m] <span className="text-slate-200">{impact10MinLabel}</span></span>
-                                <span>[10mo] <span className="text-slate-200">{impact10MoLabel}</span></span>
-                                <span>[10yr] <span className="text-slate-200">{impact10YrLabel}</span></span>
-                                <span>[Type] <span className="text-slate-200">{doorLabel}</span></span>
-                            </div>
-
-                            <div className="w-full bg-slate-900 border border-slate-800 rounded-lg p-6 space-y-6">
-                                
-                                <div className="flex items-center gap-3">
-                                    <h3 className={`text-xl font-bold tracking-tight ${config.color}`}>
-                                        {config.title}
-                                    </h3>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-slate-500 text-xs uppercase mb-1">Time-To-Live</p>
-                                        <p className="text-slate-200 font-medium">{config.ttl}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-slate-500 text-xs uppercase mb-1">Max Options</p>
-                                        <p className="text-slate-200 font-medium">{config.options}</p>
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 border-t border-slate-800/50">
-                                    <p className="text-slate-500 text-xs uppercase mb-1">Algorithm</p>
-                                    <p className="text-emerald-400 font-medium">{config.algorithm}</p>
-                                </div>
-
-                                <div className="pt-4 border-t border-slate-800/50">
-                                    <p className="text-slate-500 text-xs uppercase mb-1">Execution Rule</p>
-                                    <p className="text-slate-300 leading-relaxed text-sm">
-                                        {config.rule}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="w-full space-y-3 pt-2 px-6">
-                            <div className="flex gap-3">
-                                <button 
-                                    onClick={handleDownloadImage}
-                                    disabled={exportState.status === 'loading'}
-                                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium p-3 rounded-xl flex justify-center items-center gap-2 transition-colors border border-slate-700 disabled:opacity-50"
-                                >
-                                    {exportState.type === 'download' && exportState.status === 'loading' ? (
-                                        <Activity size={16} className="animate-spin" />
-                                    ) : exportState.type === 'download' && exportState.status === 'success' ? (
-                                        <Check size={16} className="text-emerald-400" />
-                                    ) : (
-                                        <Download size={16} />
-                                    )}
-                                    <span className="text-sm">Save Image</span>
-                                </button>
-                                
-                                <button 
-                                    onClick={handleCopyImage}
-                                    disabled={exportState.status === 'loading'}
-                                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium p-3 rounded-xl flex justify-center items-center gap-2 transition-colors border border-slate-700 disabled:opacity-50"
-                                >
-                                    {exportState.type === 'copy' && exportState.status === 'loading' ? (
-                                        <Activity size={16} className="animate-spin" />
-                                    ) : exportState.type === 'copy' && exportState.status === 'success' ? (
-                                        <Check size={16} className="text-emerald-400" />
-                                    ) : (
-                                        <Copy size={16} />
-                                    )}
-                                    <span className="text-sm">Copy Image</span>
-                                </button>
-                            </div>
-                            
-                            {exportState.type === 'copy' && exportState.status === 'error' && (
-                                <p className="text-xs text-amber-500 text-center flex items-center justify-center gap-1 bg-amber-500/10 p-2 rounded-lg">
-                                    <AlertTriangle size={12} /> Clipboard access denied. Try 'Save Image' instead.
-                                </p>
-                            )}
-
-                            <button 
-                                onClick={resetApp}
-                                className="w-full bg-slate-900 hover:bg-slate-800 text-slate-400 font-medium p-4 rounded-xl flex justify-center items-center gap-2 transition-colors"
-                            >
-                                <RotateCcw size={16} /> Start Over
-                            </button>
-                        </div>
-                    </div>
-                );
-            };
+            const l_10m = {0: 'None', 1: 'Noticeable', 2: 'Intense'}[impact10Min] || '';
+            const l_10mo = {0: 'Forgotten', 1: 'Minor', 2: 'Major'}[impact10Mo] || '';
+            const l_10yr = {0: 'Zero', 1: 'Minimal', 2: 'Altering'}[impact10Yr] || '';
+            const l_door = isReversible === true ? 'Two-Way Door' : isReversible === false ? 'One-Way Door' : '';
 
             return (
-                <div className="min-h-[100dvh] w-full flex justify-center bg-slate-950 text-slate-200 font-sans selection:bg-emerald-500/30 relative overflow-x-hidden">
-                    <InfoModal />
-                    
-                    <div className="w-full max-w-md flex flex-col pt-[max(env(safe-area-inset-top),3rem)] pb-8">
+                <div className="min-h-[100dvh] w-full flex justify-center bg-slate-950 text-slate-200 font-sans selection:bg-emerald-500/30">
+                    <div className="w-full max-w-md flex flex-col pt-[max(env(safe-area-inset-top),3rem)] px-6 pb-12" ref={containerRef}>
                         
-                        {/* Header */}
-                        <header className="mb-8 relative flex flex-col items-center w-full px-6">
-                            <button 
-                                onClick={() => setShowInfo(true)}
-                                className="absolute right-6 top-0 p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-800 rounded-full transition-colors"
-                                title="Framework Documentation"
-                            >
-                                <Info size={20} />
-                            </button>
-                            
-                            <h1 className="text-2xl font-black tracking-tight text-white text-center w-full mt-2">
-                                Decision Framework
+                        {/* Title Minimal Header */}
+                        <header className="mb-10 text-left border-b border-slate-800 pb-4">
+                            <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                                <Zap size={18} className="text-emerald-400" />
+                                O(1) Routing Engine
                             </h1>
-                            <p className="text-slate-500 font-mono text-xs uppercase tracking-wider text-center w-full mt-1">
-                                v2.0 // O(1) Routing Engine
+                            <p className="text-slate-500 font-mono text-[10px] uppercase tracking-wider mt-1">
+                                Decision Framework v2.0
                             </p>
                         </header>
 
-                        {/* Main Content Area */}
-                        <main className="flex-1 w-full flex flex-col">
-                            {step === 0 && renderStep0()}
-                            {step === 1 && renderStep1()}
-                            {step === 2 && renderStep2()}
-                            {step === 3 && renderStep3()}
+                        {/* Interactive Timeline Graph */}
+                        <main className="w-full">
+                            
+                            {/* Step 0: Target */}
+                            <PathNode title="Decision Target" icon={Terminal} isActive={currentStep === 0} isCompleted={currentStep > 0} onEdit={() => resetFromStep(0)} completedText={decisionTarget}>
+                                <div className="flex gap-2 w-full">
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g., Which framework to use..."
+                                        className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors text-sm w-full min-w-0"
+                                        value={decisionContext}
+                                        onChange={(e) => setDecisionContext(e.target.value)}
+                                        onKeyDown={(e) => { if(e.key === 'Enter' && decisionContext.trim()) { setDecisionTarget(decisionContext); setCurrentStep(1); } }}
+                                    />
+                                    <button 
+                                        disabled={!decisionContext.trim()}
+                                        onClick={() => { setDecisionTarget(decisionContext); setCurrentStep(1); }}
+                                        className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 text-white p-3 rounded-lg transition-colors flex-shrink-0"
+                                    >
+                                        <ArrowRight size={18} />
+                                    </button>
+                                </div>
+                            </PathNode>
+
+                            {/* Step 1: 10 Min */}
+                            <PathNode title="10 Minute Horizon" icon={Clock} isActive={currentStep === 1} isCompleted={currentStep > 1} onEdit={() => resetFromStep(1)} completedText={l_10m}>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+                                    <ChoiceBtn onClick={() => { setImpact10Min(0); setCurrentStep(2); }}>None</ChoiceBtn>
+                                    <ChoiceBtn onClick={() => { setImpact10Min(1); setCurrentStep(2); }}>Noticeable</ChoiceBtn>
+                                    <ChoiceBtn onClick={() => { setImpact10Min(2); setCurrentStep(2); }}>Intense</ChoiceBtn>
+                                </div>
+                            </PathNode>
+
+                            {/* Step 2: 10 Months */}
+                            <PathNode title="10 Month Horizon" icon={Calendar} isActive={currentStep === 2} isCompleted={currentStep > 2} onEdit={() => resetFromStep(2)} completedText={l_10mo}>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+                                    <ChoiceBtn onClick={() => { setImpact10Mo(0); setCurrentStep(3); }}>Forgotten</ChoiceBtn>
+                                    <ChoiceBtn onClick={() => { setImpact10Mo(1); setCurrentStep(3); }}>Minor</ChoiceBtn>
+                                    <ChoiceBtn onClick={() => { setImpact10Mo(2); setCurrentStep(3); }}>Major</ChoiceBtn>
+                                </div>
+                            </PathNode>
+
+                            {/* Step 3: 10 Years */}
+                            <PathNode title="10 Year Horizon" icon={History} isActive={currentStep === 3} isCompleted={currentStep > 3} onEdit={() => resetFromStep(3)} completedText={l_10yr}>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+                                    <ChoiceBtn onClick={() => { setImpact10Yr(0); setCurrentStep(4); }}>Zero</ChoiceBtn>
+                                    <ChoiceBtn onClick={() => { setImpact10Yr(1); setCurrentStep(4); }}>Minimal</ChoiceBtn>
+                                    <ChoiceBtn onClick={() => { setImpact10Yr(2); setCurrentStep(4); }}>Altering</ChoiceBtn>
+                                </div>
+                            </PathNode>
+
+                            {/* Step 4: Reversibility */}
+                            <PathNode title="Circuit Breaker" icon={GitBranch} isActive={currentStep === 4} isCompleted={currentStep > 4} onEdit={() => resetFromStep(4)} completedText={l_door}>
+                                <div className="grid grid-cols-1 gap-2 w-full">
+                                    <ChoiceBtn onClick={() => handleFinalize(true)}>Two-Way Door (Reversible)</ChoiceBtn>
+                                    <ChoiceBtn onClick={() => handleFinalize(false)}>One-Way Door (Irreversible)</ChoiceBtn>
+                                </div>
+                            </PathNode>
+
+                            {/* Step 5: Result / Heuristic */}
+                            <PathNode title="Execution Strategy" icon={Activity} isActive={currentStep === 5} isCompleted={currentStep === 5} isLast={true}>
+                                
+                                {/* Receipt Capture Area */}
+                                <div ref={resultRef} className="bg-slate-950 w-full pt-1 pb-4 sm:pt-0">
+                                    <div className="border border-slate-800 rounded-xl bg-slate-900/40 p-5 w-full font-mono relative overflow-hidden shadow-2xl shadow-emerald-900/5">
+                                        
+                                        <div className="mb-6 border-b border-slate-800 pb-4">
+                                            <h2 className="text-slate-100 font-bold uppercase tracking-widest text-xs flex items-center gap-2 mb-1">
+                                                <Zap size={12} className="text-emerald-400" /> ROUTING Engine Output
+                                            </h2>
+                                            <p className="text-slate-600 text-[10px]">{generationTime}</p>
+                                        </div>
+                                        
+                                        <div className="space-y-3 mb-6 text-xs border-b border-slate-800 pb-6">
+                                            <div className="flex justify-between items-start gap-4">
+                                                <span className="text-slate-500 font-semibold">TARGET</span>
+                                                <span className="text-emerald-400 text-right break-words max-w-[60%]">{decisionTarget}</span>
+                                            </div>
+                                            <div className="flex justify-between"><span className="text-slate-500">10_MIN_IMPACT</span><span className="text-slate-200">{l_10m}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-500">10_MO_IMPACT</span><span className="text-slate-200">{l_10mo}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-500">10_YR_IMPACT</span><span className="text-slate-200">{l_10yr}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-500">REVERSIBILITY</span><span className="text-slate-200">{l_door}</span></div>
+                                        </div>
+
+                                        {config && (
+                                            <div>
+                                                <div className="mb-5">
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${config.bg} ${config.color} border ${config.border}`}>
+                                                        {config.title}
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4 mb-5 text-xs">
+                                                    <div><p className="text-slate-500 mb-1">TTL</p><p className="text-slate-200 text-sm">{config.ttl}</p></div>
+                                                    <div><p className="text-slate-500 mb-1">MAX_OPTIONS</p><p className="text-slate-200 text-sm">{config.options}</p></div>
+                                                </div>
+                                                <div className="mb-5 text-xs">
+                                                    <p className="text-slate-500 mb-1">ALGORITHM</p>
+                                                    <p className="text-emerald-400 text-sm">{config.algorithm}</p>
+                                                </div>
+                                                <div className="text-xs">
+                                                    <p className="text-slate-500 mb-1">EXECUTION_RULE</p>
+                                                    <p className="text-slate-300 leading-relaxed font-sans">{config.rule}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Interactive Buttons */}
+                                <div className="w-full space-y-3 mt-4">
+                                    <div className="flex gap-3">
+                                        <button onClick={handleDownloadImage} disabled={exportState.status === 'loading'} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium p-3 rounded-xl flex justify-center items-center gap-2 transition-colors border border-slate-700 disabled:opacity-50 text-sm">
+                                            {exportState.type === 'download' && exportState.status === 'loading' ? <Activity size={16} className="animate-spin" /> : exportState.type === 'download' && exportState.status === 'success' ? <Check size={16} className="text-emerald-400" /> : <Download size={16} />}
+                                            Save Image
+                                        </button>
+                                        <button onClick={handleCopyImage} disabled={exportState.status === 'loading'} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium p-3 rounded-xl flex justify-center items-center gap-2 transition-colors border border-slate-700 disabled:opacity-50 text-sm">
+                                            {exportState.type === 'copy' && exportState.status === 'loading' ? <Activity size={16} className="animate-spin" /> : exportState.type === 'copy' && exportState.status === 'success' ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                                            Copy Image
+                                        </button>
+                                    </div>
+                                    
+                                    {exportState.type === 'copy' && exportState.status === 'error' && (
+                                        <p className="text-xs text-amber-500 text-center flex items-center justify-center gap-1 bg-amber-500/10 p-2 rounded-lg"><AlertTriangle size={12} /> Clipboard access denied. Try 'Save Image' instead.</p>
+                                    )}
+
+                                    <button onClick={() => resetFromStep(0)} className="w-full bg-slate-900 hover:bg-slate-800 text-slate-400 font-medium p-3 rounded-xl flex justify-center items-center gap-2 transition-colors text-sm">
+                                        <RotateCcw size={14} /> Initialize New Query
+                                    </button>
+                                </div>
+                            </PathNode>
+
                         </main>
-
-                        {/* Footer */}
-                        <footer className="mt-12 text-center w-full px-6">
-                            <p className="text-slate-600 text-xs font-mono">
-                                Evading analysis paralysis since {new Date().getFullYear()}
-                            </p>
-                        </footer>
-
                     </div>
                 </div>
             );
         }
 
-        // Render Application
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
